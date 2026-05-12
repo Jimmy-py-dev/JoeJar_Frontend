@@ -63,7 +63,7 @@ async function apiCall(endpoint, options = {}) {
 
 window.forceLogout = () => {
     localStorage.clear();
-    window.location.href = 'login.html';
+    window.location.href = 'index.html';
 };
 
 function formatMoney(value) {
@@ -73,7 +73,7 @@ function formatMoney(value) {
 // --- ROUTER ---
 document.addEventListener('DOMContentLoaded', () => {
     const path = window.location.pathname;
-    const isLogin = path.includes('login.html');
+    const isLogin = path.includes('index.html');
 
     if (!localStorage.getItem('access_token') && !isLogin) return forceLogout();
 
