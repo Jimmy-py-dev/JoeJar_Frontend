@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Financial | O-Lite</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-50 flex flex-col lg:flex-row h-screen overflow-hidden">
+
+    <aside class="fixed bottom-0 w-full lg:relative lg:w-64 bg-slate-900 text-slate-400 lg:p-6 flex lg:flex-col shadow-2xl z-50 order-last lg:order-first">
+        <div class="hidden lg:block text-2xl font-black text-white mb-10 italic">O-LITE</div>
+        <nav class="flex-1 flex lg:flex-col justify-around lg:justify-start lg:space-y-2 p-2 lg:p-0">
+            <a href="shop.html" class="flex-1 text-center lg:text-left p-3 lg:p-4 rounded-xl lg:rounded-2xl hover:bg-slate-800 hover:text-white font-bold text-sm lg:text-base transition">🛒 <span class="hidden sm:inline">Shop</span></a>
+            <a href="products.html" class="flex-1 text-center lg:text-left p-3 lg:p-4 rounded-xl lg:rounded-2xl hover:bg-slate-800 hover:text-white font-bold text-sm lg:text-base transition">📦 <span class="hidden sm:inline">Inventory</span></a>
+            <a href="history.html" class="flex-1 text-center lg:text-left p-3 lg:p-4 rounded-xl lg:rounded-2xl hover:bg-slate-800 hover:text-white font-bold text-sm lg:text-base transition">📜 <span class="hidden sm:inline">History</span></a>
+            <a href="financial.html" class="flex-1 text-center lg:text-left p-3 lg:p-4 rounded-xl lg:rounded-2xl bg-indigo-600 text-white font-bold text-sm lg:text-base">💰 <span class="hidden sm:inline">Finance</span></a>
+        </nav>
+        <button onclick="forceLogout()" class="hidden lg:block text-left text-xs font-bold pt-6 border-t border-slate-800 uppercase hover:text-white">Logout</button>
+    </aside>
+
+    <main class="flex-1 p-4 lg:p-10 overflow-y-auto pb-[88px] lg:pb-10">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 lg:mb-10 gap-4">
+            <h1 class="text-2xl lg:text-3xl font-black text-slate-800">Financial Status</h1>
+            <button onclick="loadFinancialSummary()" class="w-full sm:w-auto bg-slate-900 text-white px-6 py-3 rounded-xl font-bold hover:bg-slate-800 transition">Refresh</button>
+        </div>
+
+        <section class="grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-6 mb-6">
+            <div class="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
+                <div class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Balance On Hand</div>
+                <div id="balance-on-hand" class="text-3xl font-black text-slate-900">$0.00</div>
+            </div>
+            <div class="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
+                <div class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Receivables</div>
+                <div id="receivables-total" class="text-3xl font-black text-amber-600">$0.00</div>
+            </div>
+            <div class="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
+                <div class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Actual Balance</div>
+                <div id="actual-balance" class="text-3xl font-black text-indigo-600">$0.00</div>
+            </div>
+        </section>
+
+        <section class="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6 max-w-5xl">
+            <form id="balance-form" class="bg-white p-6 lg:p-8 rounded-3xl border border-slate-100 shadow-sm">
+                <h2 class="text-xl font-black text-slate-800 mb-5">Update Cash Balance</h2>
+                <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2" for="balance-input">Balance On Hand</label>
+                <input id="balance-input" type="number" step="0.01" min="0" required class="w-full p-4 bg-slate-50 border rounded-2xl outline-indigo-600 font-bold text-slate-800 mb-5">
+                <button type="submit" class="w-full bg-indigo-600 text-white py-4 rounded-2xl font-black hover:bg-indigo-700 transition">Update Balance</button>
+            </form>
+
+            <div class="bg-white p-6 lg:p-8 rounded-3xl border border-slate-100 shadow-sm">
+                <h2 class="text-xl font-black text-slate-800 mb-5">Receivables</h2>
+                <div class="text-sm text-slate-500 font-medium mb-6">Recalculate unpaid credit sales and sync the receivables bucket.</div>
+                <button onclick="recalculateReceivables(this)" class="w-full bg-amber-500 text-white py-4 rounded-2xl font-black hover:bg-amber-600 transition">Sync Receivables</button>
+                <a href="history.html" class="block mt-4 text-center bg-slate-100 text-slate-700 py-4 rounded-2xl font-bold hover:bg-slate-200 transition">View Sales History</a>
+            </div>
+        </section>
+    </main>
+
+    <script src="app.js"></script>
+</body>
+</html>

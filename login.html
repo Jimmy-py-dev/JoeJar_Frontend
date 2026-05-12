@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login | O-Lite</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-[#0f172a] flex items-center justify-center min-h-screen">
+    
+    <div class="bg-white p-12 rounded-[3rem] shadow-2xl w-full max-w-md">
+        <h1 class="text-3xl font-black text-center mb-10 text-slate-800">O-LITE</h1>
+        
+        <form id="login-form" class="space-y-6">
+            <input type="text" name="username" placeholder="Username" required class="w-full p-5 bg-slate-50 border rounded-3xl outline-indigo-600">
+            <input type="password" name="password" placeholder="Password" required class="w-full p-5 bg-slate-50 border rounded-3xl outline-indigo-600">
+            <button type="submit" class="w-full bg-indigo-600 text-white py-5 rounded-[2rem] font-black shadow-xl hover:bg-indigo-700 transition">Sign In</button>
+        </form>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

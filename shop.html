@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Terminal | O-Lite</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-50 flex flex-col lg:flex-row h-screen overflow-hidden">
+
+    <aside class="fixed bottom-0 w-full lg:relative lg:w-64 bg-slate-900 text-slate-400 lg:p-6 flex lg:flex-col shadow-2xl z-50 order-last lg:order-first">
+        <div class="hidden lg:block text-2xl font-black text-white mb-10 italic">O-LITE</div>
+        <nav class="flex-1 flex lg:flex-col justify-around lg:justify-start lg:space-y-2 p-2 lg:p-0">
+            <a href="shop.html" class="flex-1 text-center lg:text-left p-3 lg:p-4 rounded-xl lg:rounded-2xl bg-indigo-600 text-white font-bold text-sm lg:text-base">🛒 <span class="hidden sm:inline">Shop</span></a>
+            <a href="products.html" class="flex-1 text-center lg:text-left p-3 lg:p-4 rounded-xl lg:rounded-2xl hover:bg-slate-800 hover:text-white font-bold text-sm lg:text-base transition">📦 <span class="hidden sm:inline">Inventory</span></a>
+            <a href="history.html" class="flex-1 text-center lg:text-left p-3 lg:p-4 rounded-xl lg:rounded-2xl hover:bg-slate-800 hover:text-white font-bold text-sm lg:text-base transition">📜 <span class="hidden sm:inline">History</span></a>
+            <a href="financial.html" class="flex-1 text-center lg:text-left p-3 lg:p-4 rounded-xl lg:rounded-2xl hover:bg-slate-800 hover:text-white font-bold text-sm lg:text-base transition">💰 <span class="hidden sm:inline">Finance</span></a>
+        </nav>
+        <button onclick="forceLogout()" class="hidden lg:block text-left text-xs font-bold pt-6 border-t border-slate-800 uppercase hover:text-white">Logout</button>
+    </aside>
+
+    <main class="flex-1 flex flex-col lg:flex-row overflow-hidden pb-[72px] lg:pb-0">
+        <div class="flex-1 p-4 lg:p-10 overflow-y-auto h-1/2 lg:h-full">
+            <h1 class="text-2xl lg:text-3xl font-black mb-6 lg:mb-10 text-slate-800">Products</h1>
+            <div id="product-grid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 lg:gap-6"></div>
+        </div>
+
+        <div class="w-full lg:w-96 bg-white lg:border-l flex flex-col shadow-2xl h-1/2 lg:h-full border-t lg:border-t-0 z-40">
+            <div class="p-4 lg:p-8 border-b font-black text-slate-800 flex justify-between items-start gap-3">
+                <span>ACTIVE CART</span>
+                <div class="w-44">
+                    <input type="text" id="buyer-name" list="buyer-datalist" autocomplete="off" placeholder="Buyer Name" oninput="updateBuyerPreview()" class="p-2 border rounded-lg text-xs font-medium outline-none w-full focus:border-indigo-600">
+                    <div id="buyer-preview" class="text-[10px] font-bold text-slate-400 mt-1">Guest sale</div>
+                    <datalist id="buyer-datalist"></datalist>
+                </div>
+            </div>
+            
+            <div id="cart-list" class="flex-1 p-4 lg:p-8 overflow-y-auto space-y-3"></div>
+            
+            <div class="p-6 lg:p-8 bg-slate-900 text-white rounded-t-3xl lg:rounded-t-[3rem] space-y-4">
+                <div class="flex justify-between items-center text-xs">
+                    <span class="font-bold text-slate-400">DISCOUNT ($)</span>
+                    <input type="number" id="discount-input" oninput="updateDiscount(this.value)" class="bg-slate-800 p-2 w-20 text-right rounded font-bold outline-none" value="0" min="0">
+                </div>
+                <div class="flex justify-between text-xl lg:text-2xl font-black">
+                    <span>Total</span><span>$<span id="cart-total">0.00</span></span>
+                </div>
+                <button onclick="finalizeSale()" class="w-full bg-indigo-600 py-3 lg:py-4 rounded-2xl lg:rounded-3xl font-black hover:bg-indigo-500 transition">CONFIRM SALE</button>
+            </div>
+        </div>
+    </main>
+
+    <div id="confirm-modal" style="display: none;" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] items-center justify-center p-4">
+        <div class="bg-white p-8 lg:p-10 rounded-3xl lg:rounded-[3rem] shadow-2xl w-full max-w-sm text-center">
+            <div class="text-5xl mb-4">🛒</div>
+            <h3 class="text-2xl font-black mb-2 text-slate-800">Finalize Sale</h3>
+            <p class="text-slate-500 font-medium mb-6 text-sm lg:text-base">Review buyer, payment method and totals before confirming.</p>
+
+            <div class="flex flex-col gap-3 text-left mb-4">
+                <div class="text-sm text-slate-600">Buyer: <span id="confirm-buyer-name" class="font-bold text-slate-800">(none)</span></div>
+                <label class="text-xs font-bold text-slate-600">Payment Method</label>
+                <select id="payment-method" class="p-2 border rounded-lg text-sm w-full">
+                    <option value="cash">Cash</option>
+                    <option value="bank">Bank</option>
+                    <option value="credit">Credit</option>
+                </select>
+            </div>
+
+            <div class="flex gap-4">
+                <button onclick="closeConfirmModal()" class="flex-1 font-bold text-slate-400 hover:text-slate-600 py-3">Cancel</button>
+                <button onclick="executeSale()" class="flex-1 bg-indigo-600 text-white py-3 lg:py-4 rounded-2xl font-black shadow-xl">Confirm Sale</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="receipt-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[200] flex items-center justify-center p-4" style="display: none;">
+        <div class="bg-white p-8 lg:p-10 rounded-3xl shadow-2xl w-full max-w-md text-left">
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
