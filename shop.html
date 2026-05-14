@@ -5,8 +5,59 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Terminal | O-Lite</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @media (max-width: 1023px) {
+            body.shop-page {
+                min-height: 100svh;
+            }
+
+            .shop-main {
+                height: 100svh;
+                padding-bottom: 4.5rem;
+            }
+
+            .shop-products {
+                height: 100%;
+                padding-bottom: 7.5rem;
+            }
+
+            #cart-panel {
+                position: fixed;
+                left: 0;
+                right: 0;
+                bottom: 4.25rem;
+                height: min(72svh, 34rem);
+                max-height: calc(100svh - 7rem);
+                border-radius: 1.5rem 1.5rem 0 0;
+                transition: transform 220ms ease;
+                z-index: 45;
+            }
+
+            #cart-panel.cart-collapsed {
+                transform: translateY(calc(100% - 5.25rem));
+            }
+
+            #cart-panel.cart-open {
+                transform: translateY(0);
+            }
+
+            #cart-list {
+                min-height: 0;
+            }
+
+            .cart-mobile-hint {
+                display: inline-flex;
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .cart-mobile-hint {
+                display: none;
+            }
+        }
+    </style>
 </head>
-<body class="bg-slate-50 flex flex-col lg:flex-row h-screen overflow-hidden">
+<body class="shop-page bg-slate-50 flex flex-col lg:flex-row h-screen overflow-hidden">
 
     <aside class="fixed bottom-0 w-full lg:relative lg:w-64 bg-slate-900 text-slate-400 lg:p-6 flex lg:flex-col shadow-2xl z-50 order-last lg:order-first">
         <div class="hidden lg:block text-2xl font-black text-white mb-10 italic">O-LITE</div>
@@ -19,15 +70,21 @@
         <button onclick="forceLogout()" class="hidden lg:block text-left text-xs font-bold pt-6 border-t border-slate-800 uppercase hover:text-white">Logout</button>
     </aside>
 
-    <main class="flex-1 flex flex-col lg:flex-row overflow-hidden pb-[72px] lg:pb-0">
-        <div class="flex-1 p-4 lg:p-10 overflow-y-auto h-1/2 lg:h-full">
+    <main class="shop-main flex-1 flex flex-col lg:flex-row overflow-hidden pb-[72px] lg:pb-0">
+        <div class="shop-products flex-1 p-4 lg:p-10 overflow-y-auto lg:h-full">
             <h1 class="text-2xl lg:text-3xl font-black mb-6 lg:mb-10 text-slate-800">Products</h1>
             <div id="product-grid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 lg:gap-6"></div>
         </div>
 
-        <div class="w-full lg:w-96 bg-white lg:border-l flex flex-col shadow-2xl h-1/2 lg:h-full border-t lg:border-t-0 z-40">
+        <div id="cart-panel" class="cart-collapsed w-full lg:w-96 bg-white lg:border-l flex flex-col shadow-2xl lg:h-full border-t lg:border-t-0 z-40">
             <div class="p-4 lg:p-8 border-b font-black text-slate-800 flex justify-between items-start gap-3">
-                <span>ACTIVE CART</span>
+                <div>
+                    <div>ACTIVE CART</div>
+                    <button id="cart-mobile-toggle" onclick="toggleCart()" class="cart-mobile-hint mt-2 items-center gap-2 text-xs text-indigo-600 font-black">
+                        <span id="cart-count">0 items</span>
+                        <span id="cart-chevron">Open</span>
+                    </button>
+                </div>
                 <div class="w-44">
                     <input type="text" id="buyer-name" list="buyer-datalist" autocomplete="off" placeholder="Buyer Name" oninput="updateBuyerPreview()" class="p-2 border rounded-lg text-xs font-medium outline-none w-full focus:border-indigo-600">
                     <div id="buyer-preview" class="text-[10px] font-bold text-slate-400 mt-1">Guest sale</div>

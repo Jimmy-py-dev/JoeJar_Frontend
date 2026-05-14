@@ -1,5 +1,5 @@
 const CONFIG = {
-    API_BASE: "http:/127.0.0.1:8000/api/v1",
+    API_BASE: "https:/joejar.onrender.com/api/v1",
     ENDPOINTS: {
         login: "/auth/login",
         refresh: "/auth/refresh",
