@@ -126,6 +126,7 @@ async function initShop() {
         state.buyers = await buyerRes.json(); 
         renderBuyerList(); 
     }
+    renderCart();
 }
 
 async function initProducts() {
@@ -462,8 +463,29 @@ window.addToCart = (id) => {
 };
 window.updateCartPrice = (idx, val) => { state.cart[idx].price = parseFloat(val); renderCart(); };
 window.updateCartQty = (idx, val) => { state.cart[idx].quantity = parseInt(val); renderCart(); };
-window.removeFromCart = (idx) => { state.cart.splice(idx, 1); renderCart(); };
+window.removeFromCart = (idx) => {
+    state.cart.splice(idx, 1);
+    renderCart();
+    if (!state.cart.length) setCartOpen(false);
+};
 window.updateDiscount = (val) => { state.globalDiscount = parseFloat(val) || 0; renderCart(); };
+
+function setCartOpen(open) {
+    const panel = document.getElementById('cart-panel');
+    if (!panel) return;
+
+    panel.classList.toggle('cart-open', open);
+    panel.classList.toggle('cart-collapsed', !open);
+
+    const chevron = document.getElementById('cart-chevron');
+    if (chevron) chevron.innerText = open ? 'Close' : 'Open';
+}
+
+window.toggleCart = () => {
+    const panel = document.getElementById('cart-panel');
+    if (!panel) return;
+    setCartOpen(!panel.classList.contains('cart-open'));
+};
 
 // CUSTOM CONFIRMATION MODAL LOGIC
 window.finalizeSale = () => {
@@ -592,8 +614,16 @@ function renderCart() {
     `).join('');
     
     const total = state.cart.reduce((s, i) => s + (i.price * i.quantity), 0) - state.globalDiscount;
+    const safeTotal = Math.max(0, total);
     const totalEl = document.getElementById('cart-total');
-    if(totalEl) totalEl.innerText = Math.max(0, total).toFixed(2);
+    if(totalEl) totalEl.innerText = safeTotal.toFixed(2);
+
+    const itemCount = state.cart.reduce((sum, item) => sum + (Number(item.quantity) || 0), 0);
+    const countEl = document.getElementById('cart-count');
+    if (countEl) {
+        const label = itemCount === 1 ? 'item' : 'items';
+        countEl.innerText = `${itemCount} ${label} - ${formatMoney(safeTotal)}`;
+    }
 
     const discInput = document.getElementById('discount-input');
     if (discInput) {
@@ -618,15 +648,37 @@ window.closeProductModal = () => document.getElementById('product-modal').style.
 
 async function handleProductSave(e) {
     e.preventDefault();
-    const payload = Object.fromEntries(new FormData(e.target).entries());
+    const form = e.target;
+    const btn = form.querySelector('button[type="submit"]');
+    if (btn && btn.disabled) return;
+
+    if (btn) {
+        btn.disabled = true;
+        btn.innerText = 'Saving...';
+    }
+
+    const payload = Object.fromEntries(new FormData(form).entries());
     payload.price = parseFloat(payload.price); payload.stock_quantity = parseInt(payload.stock_quantity);
 
     const isEdit = !!state.editingId;
     const url = isEdit ? `${CONFIG.ENDPOINTS.products}${state.editingId}` : CONFIG.ENDPOINTS.products;
     
-    const res = await apiCall(url, { method: isEdit ? 'PATCH' : 'POST', body: JSON.stringify(payload) });
-    if (res && res.ok) {
-        closeProductModal(); notify(isEdit ? "Product Updated" : "Product Saved"); initProducts();
+    try {
+        const res = await apiCall(url, { method: isEdit ? 'PATCH' : 'POST', body: JSON.stringify(payload) });
+        if (res && res.ok) {
+            closeProductModal();
+            form.reset();
+            notify(isEdit ? "Product Updated" : "Product Saved");
+            initProducts();
+            return;
+        }
+
+        notify('Failed to save product', 'error');
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerText = 'Save';
+        }
     }
 }
 

@@ -35,10 +35,16 @@
 
             #cart-panel.cart-collapsed {
                 transform: translateY(calc(100% - 5.25rem));
+                pointer-events: none;
             }
 
             #cart-panel.cart-open {
                 transform: translateY(0);
+                pointer-events: auto;
+            }
+
+            #cart-panel.cart-collapsed > div:first-child {
+                pointer-events: auto;
             }
 
             #cart-list {
@@ -108,7 +114,7 @@
     </main>
 
     <div id="confirm-modal" style="display: none;" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] items-center justify-center p-4">
-        <div class="bg-white p-8 lg:p-10 rounded-3xl lg:rounded-[3rem] shadow-2xl w-full max-w-sm text-center">
+        <div class="bg-white p-5 sm:p-8 lg:p-10 rounded-3xl lg:rounded-[3rem] shadow-2xl w-full max-w-sm max-h-[calc(100svh-2rem)] overflow-y-auto text-center">
             <div class="text-5xl mb-4">🛒</div>
             <h3 class="text-2xl font-black mb-2 text-slate-800">Finalize Sale</h3>
             <p class="text-slate-500 font-medium mb-6 text-sm lg:text-base">Review buyer, payment method and totals before confirming.</p>
@@ -116,7 +122,7 @@
             <div class="flex flex-col gap-3 text-left mb-4">
                 <div class="text-sm text-slate-600">Buyer: <span id="confirm-buyer-name" class="font-bold text-slate-800">(none)</span></div>
                 <label class="text-xs font-bold text-slate-600">Payment Method</label>
-                <select id="payment-method" class="p-2 border rounded-lg text-sm w-full">
+                <select id="payment-method" class="p-2 border rounded-lg text-sm w-full max-w-full">
                     <option value="cash">Cash</option>
                     <option value="bank">Bank</option>
                     <option value="credit">Credit</option>
