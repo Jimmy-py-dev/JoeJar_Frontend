@@ -11,10 +11,10 @@
     <aside class="fixed bottom-0 w-full lg:relative lg:w-64 bg-slate-900 text-slate-400 lg:p-6 flex lg:flex-col shadow-2xl z-50 order-last lg:order-first">
         <div class="hidden lg:block text-2xl font-black text-white mb-10 italic">O-LITE</div>
         <nav class="flex-1 flex lg:flex-col justify-around lg:justify-start lg:space-y-2 p-2 lg:p-0">
-            <a href="shop.html" class="flex-1 text-center lg:text-left p-3 lg:p-4 rounded-xl lg:rounded-2xl hover:bg-slate-800 hover:text-white font-bold text-sm lg:text-base transition">🛒 <span class="hidden sm:inline">Shop</span></a>
-            <a href="products.html" class="flex-1 text-center lg:text-left p-3 lg:p-4 rounded-xl lg:rounded-2xl bg-indigo-600 text-white font-bold text-sm lg:text-base">📦 <span class="hidden sm:inline">Inventory</span></a>
-            <a href="history.html" class="flex-1 text-center lg:text-left p-3 lg:p-4 rounded-xl lg:rounded-2xl hover:bg-slate-800 hover:text-white font-bold text-sm lg:text-base transition">📜 <span class="hidden sm:inline">History</span></a>
-            <a href="financial.html" class="flex-1 text-center lg:text-left p-3 lg:p-4 rounded-xl lg:rounded-2xl hover:bg-slate-800 hover:text-white font-bold text-sm lg:text-base transition">💰 <span class="hidden sm:inline">Finance</span></a>
+            <a href="shop.html" class="flex-1 text-center lg:text-left p-3 lg:p-4 rounded-xl hover:bg-slate-800 hover:text-white font-bold text-sm lg:text-base transition">Shop</a>
+            <a href="products.html" class="flex-1 text-center lg:text-left p-3 lg:p-4 rounded-xl bg-indigo-600 text-white font-bold text-sm lg:text-base">Inventory</a>
+            <a href="history.html" class="flex-1 text-center lg:text-left p-3 lg:p-4 rounded-xl hover:bg-slate-800 hover:text-white font-bold text-sm lg:text-base transition">History</a>
+            <a href="financial.html" class="flex-1 text-center lg:text-left p-3 lg:p-4 rounded-xl hover:bg-slate-800 hover:text-white font-bold text-sm lg:text-base transition">Finance</a>
         </nav>
         <button onclick="forceLogout()" class="hidden lg:block text-left text-xs font-bold pt-6 border-t border-slate-800 uppercase hover:text-white">Logout</button>
     </aside>
@@ -22,8 +22,8 @@
     <main class="flex-1 p-4 lg:p-10 overflow-y-auto pb-[88px] lg:pb-10">
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 lg:mb-10 gap-4">
             <h1 class="text-2xl lg:text-3xl font-black text-slate-800">Manage Inventory</h1>
-            <button onclick="openProductModal()" class="w-full sm:w-auto bg-indigo-600 text-white px-6 lg:px-8 py-3 rounded-xl lg:rounded-2xl font-bold shadow-lg hover:bg-indigo-700 transition">
-                + Add Product
+            <button onclick="openProductModal()" class="w-full sm:w-auto bg-indigo-600 text-white px-6 lg:px-8 py-3 rounded-xl font-bold shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition">
+                Add Product
             </button>
         </div>
 
@@ -31,7 +31,7 @@
     </main>
 
     <div id="product-modal" style="display: none;" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] items-center justify-center p-4">
-        <form id="product-form" class="bg-white p-6 lg:p-10 rounded-3xl lg:rounded-[3rem] shadow-2xl w-full max-w-md">
+        <form id="product-form" class="bg-white p-6 lg:p-10 rounded-3xl shadow-2xl w-full max-w-md max-h-[calc(100svh-2rem)] overflow-y-auto">
             <h3 class="text-xl lg:text-2xl font-black mb-6 text-slate-800">Product Details</h3>
             <div class="space-y-4">
                 <input name="name" placeholder="Product Name" required class="w-full p-3 lg:p-4 bg-slate-50 border rounded-xl lg:rounded-2xl outline-indigo-600 font-medium text-sm lg:text-base">
@@ -39,7 +39,7 @@
                 <input name="stock_quantity" type="number" placeholder="Quantity" required class="w-full p-3 lg:p-4 bg-slate-50 border rounded-xl lg:rounded-2xl outline-indigo-600 font-medium text-sm lg:text-base">
                 <div class="flex gap-4 pt-4">
                     <button type="button" onclick="closeProductModal()" class="flex-1 font-bold text-slate-400 hover:text-slate-600 py-3">Cancel</button>
-                    <button id="product-save-btn" type="submit" class="flex-1 bg-slate-900 text-white py-3 lg:py-4 rounded-xl lg:rounded-2xl font-black hover:bg-slate-800 disabled:opacity-60 disabled:cursor-not-allowed">Save</button>
+                    <button id="product-save-btn" type="submit" class="flex-1 bg-slate-900 text-white py-3 lg:py-4 rounded-xl font-black hover:bg-slate-800 disabled:opacity-60 disabled:cursor-not-allowed">Save</button>
                 </div>
             </div>
         </form>

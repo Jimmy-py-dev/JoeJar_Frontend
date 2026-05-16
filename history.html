@@ -11,10 +11,10 @@
     <aside class="fixed bottom-0 w-full lg:relative lg:w-64 bg-slate-900 text-slate-400 lg:p-6 flex lg:flex-col shadow-2xl z-50 order-last lg:order-first">
         <div class="hidden lg:block text-2xl font-black text-white mb-10 italic">O-LITE</div>
         <nav class="flex-1 flex lg:flex-col justify-around lg:justify-start lg:space-y-2 p-2 lg:p-0">
-            <a href="shop.html" class="flex-1 text-center lg:text-left p-3 lg:p-4 rounded-xl lg:rounded-2xl hover:bg-slate-800 hover:text-white font-bold text-sm lg:text-base transition">🛒 <span class="hidden sm:inline">Shop</span></a>
-            <a href="products.html" class="flex-1 text-center lg:text-left p-3 lg:p-4 rounded-xl lg:rounded-2xl hover:bg-slate-800 hover:text-white font-bold text-sm lg:text-base transition">📦 <span class="hidden sm:inline">Inventory</span></a>
-            <a href="history.html" class="flex-1 text-center lg:text-left p-3 lg:p-4 rounded-xl lg:rounded-2xl bg-indigo-600 text-white font-bold text-sm lg:text-base">📜 <span class="hidden sm:inline">History</span></a>
-            <a href="financial.html" class="flex-1 text-center lg:text-left p-3 lg:p-4 rounded-xl lg:rounded-2xl hover:bg-slate-800 hover:text-white font-bold text-sm lg:text-base transition">💰 <span class="hidden sm:inline">Finance</span></a>
+            <a href="shop.html" class="flex-1 text-center lg:text-left p-3 lg:p-4 rounded-xl hover:bg-slate-800 hover:text-white font-bold text-sm lg:text-base transition">Shop</a>
+            <a href="products.html" class="flex-1 text-center lg:text-left p-3 lg:p-4 rounded-xl hover:bg-slate-800 hover:text-white font-bold text-sm lg:text-base transition">Inventory</a>
+            <a href="history.html" class="flex-1 text-center lg:text-left p-3 lg:p-4 rounded-xl bg-indigo-600 text-white font-bold text-sm lg:text-base">History</a>
+            <a href="financial.html" class="flex-1 text-center lg:text-left p-3 lg:p-4 rounded-xl hover:bg-slate-800 hover:text-white font-bold text-sm lg:text-base transition">Finance</a>
         </nav>
         <button onclick="forceLogout()" class="hidden lg:block text-left text-xs font-bold pt-6 border-t border-slate-800 uppercase hover:text-white">Logout</button>
     </aside>
@@ -22,25 +22,25 @@
     <main class="flex-1 p-4 lg:p-10 overflow-y-auto pb-[88px] lg:pb-10">
         <h1 class="text-2xl lg:text-3xl font-black mb-4 lg:mb-6 text-slate-800">Sales History</h1>
 
-        <div class="flex items-center justify-between mb-6 gap-4">
-            <div class="flex items-center gap-3">
-                <select id="history-filter" class="p-2 border rounded-lg text-sm" onchange="initHistory()">
+        <div class="flex flex-col xl:flex-row xl:items-center justify-between mb-6 gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full xl:w-auto">
+                <select id="history-filter" class="p-3 border rounded-xl text-sm bg-white" onchange="initHistory()">
                     <option value="">All Payments</option>
                     <option value="cash">Cash</option>
                     <option value="bank">Bank</option>
                     <option value="credit">Credit</option>
                 </select>
-                <input id="history-search" placeholder="Search buyer or order #" class="p-2 border rounded-lg text-sm" oninput="initHistory()">
+                <input id="history-search" placeholder="Search buyer or order #" class="p-3 border rounded-xl text-sm bg-white" oninput="initHistory()">
             </div>
-            <div class="flex items-center gap-2">
-                <button onclick="initHistory()" class="bg-indigo-600 text-white px-3 py-2 rounded-lg font-bold text-sm">Refresh</button>
-                <button onclick="downloadSalesExcel(this)" class="bg-emerald-600 text-white px-3 py-2 rounded-lg font-bold text-sm">Export Excel</button>
-                <button onclick="downloadSalesExcel(this, true)" class="bg-rose-600 text-white px-3 py-2 rounded-lg font-bold text-sm">Export & Clear Old</button>
-                <button onclick="window.print()" class="bg-slate-100 text-slate-700 px-3 py-2 rounded-lg text-sm">Print</button>
+            <div class="grid grid-cols-2 sm:flex sm:items-center gap-2">
+                <button onclick="initHistory()" class="bg-indigo-600 text-white px-3 py-3 sm:py-2 rounded-xl font-bold text-sm">Refresh</button>
+                <button onclick="downloadSalesExcel(this)" class="bg-emerald-600 text-white px-3 py-3 sm:py-2 rounded-xl font-bold text-sm">Export Excel</button>
+                <button onclick="downloadSalesExcel(this, true)" class="bg-rose-600 text-white px-3 py-3 sm:py-2 rounded-xl font-bold text-sm">Export & Clear Old</button>
+                <button onclick="window.print()" class="bg-slate-100 text-slate-700 px-3 py-3 sm:py-2 rounded-xl text-sm font-bold">Print</button>
             </div>
         </div>
 
-        <div id="history-list" class="max-w-2xl flex flex-col gap-3 lg:gap-4"></div>
+        <div id="history-list" class="max-w-3xl flex flex-col gap-3 lg:gap-4"></div>
     </main>
 
     <!-- Receipt modal placeholder (styled, populated by app.js) -->

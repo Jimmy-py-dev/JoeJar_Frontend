@@ -15,6 +15,7 @@ const CONFIG = {
 };
 
 let state = { products: [], cart: [], buyers: [], globalDiscount: 0, editingId: null, financial: null };
+let refreshPromise = null;
 
 // --- GLOBAL UI HELPERS ---
 window.notify = (msg, type = 'success') => {
@@ -24,7 +25,7 @@ window.notify = (msg, type = 'success') => {
         toast.id = 'global-toast';
         document.body.appendChild(toast);
     }
-    toast.className = `fixed bottom-10 right-10 px-8 py-4 rounded-2xl text-white font-bold shadow-2xl z-[9999] transition-all duration-300 ${type === 'success' ? 'bg-emerald-600' : 'bg-rose-600'}`;
+    toast.className = `fixed bottom-6 left-4 right-4 sm:left-auto sm:right-6 sm:bottom-6 sm:max-w-sm px-5 py-4 rounded-2xl text-white font-bold shadow-2xl z-[9999] transition-all duration-300 ${type === 'success' ? 'bg-emerald-600' : 'bg-rose-600'}`;
     toast.innerText = msg;
     toast.style.opacity = '1';
     toast.style.transform = 'translateY(0)';
@@ -35,47 +36,98 @@ window.notify = (msg, type = 'success') => {
 };
 
 // --- CORE API & AUTHENTICATION ---
+function clearAuthTokens() {
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
+}
+
+async function refreshAccessToken() {
+    if (refreshPromise) return refreshPromise;
+
+    refreshPromise = (async () => {
+        const refToken = localStorage.getItem('refresh_token');
+        if (!refToken) return null;
+
+        try {
+            const refreshRes = await fetch(`${CONFIG.API_BASE}${CONFIG.ENDPOINTS.refresh}?token=${encodeURIComponent(refToken)}`, {
+                method: 'POST'
+            });
+
+            if (!refreshRes.ok) {
+                clearAuthTokens();
+                return null;
+            }
+
+            const data = await refreshRes.json();
+            if (!data.access_token) {
+                clearAuthTokens();
+                return null;
+            }
+
+            localStorage.setItem('access_token', data.access_token);
+            if (data.refresh_token) localStorage.setItem('refresh_token', data.refresh_token);
+            return data.access_token;
+        } catch (error) {
+            return null;
+        }
+    })();
+
+    try {
+        return await refreshPromise;
+    } finally {
+        refreshPromise = null;
+    }
+}
+
 async function apiCall(endpoint, options = {}) {
     const url = endpoint.startsWith('http') ? endpoint : `${CONFIG.API_BASE}${endpoint}`;
-    options.headers = {
-        ...options.headers,
-        'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
-        'Content-Type': 'application/json'
+    const requestOptions = {
+        ...options,
+        headers: {
+            ...(options.headers || {}),
+            'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+            'Content-Type': 'application/json'
+        }
     };
 
-    let response = await fetch(url, options);
+    let response = await fetch(url, requestOptions);
 
     if (response.status === 401 || response.status === 403) {
-        const refToken = localStorage.getItem('refresh_token');
-        if (!refToken) return forceLogout();
+        const accessToken = await refreshAccessToken();
+        if (!accessToken) return forceLogout();
 
-        const refreshRes = await fetch(`${CONFIG.API_BASE}${CONFIG.ENDPOINTS.refresh}?token=${refToken}`, { method: 'POST' });
-        if (refreshRes.ok) {
-            const data = await refreshRes.json();
-            localStorage.setItem('access_token', data.access_token);
-            localStorage.setItem('refresh_token', data.refresh_token);
-            options.headers['Authorization'] = `Bearer ${data.access_token}`;
-            return await fetch(url, options);
-        } else return forceLogout();
+        requestOptions.headers['Authorization'] = `Bearer ${accessToken}`;
+        response = await fetch(url, requestOptions);
+        if (response.status === 401 || response.status === 403) return forceLogout();
     }
     return response;
 }
 
 window.forceLogout = () => {
-    localStorage.clear();
+    clearAuthTokens();
     window.location.href = 'index.html';
 };
+
+async function ensureAuthenticated() {
+    if (localStorage.getItem('access_token')) return true;
+
+    const accessToken = await refreshAccessToken();
+    if (accessToken) return true;
+
+    forceLogout();
+    return false;
+}
 
 function formatMoney(value) {
     return `$${Number(value || 0).toFixed(2)}`;
 }
 
 // --- ROUTER ---
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     const path = window.location.pathname;
     const isLogin = path.includes('index.html');
 
-    if (!localStorage.getItem('access_token') && !isLogin) return forceLogout();
+    if (!isLogin && !(await ensureAuthenticated())) return;
 
     if (isLogin) initLogin();
     else {
@@ -92,21 +144,34 @@ document.addEventListener('DOMContentLoaded', () => {
 function initLogin() {
     const form = document.getElementById('login-form');
     if (!form) return;
-    if (localStorage.getItem('access_token')) window.location.href = 'shop.html';
+    if (localStorage.getItem('access_token') && localStorage.getItem('refresh_token')) {
+        window.location.href = 'shop.html';
+        return;
+    }
+    if (localStorage.getItem('access_token') && !localStorage.getItem('refresh_token')) clearAuthTokens();
 
     form.onsubmit = async (e) => {
         e.preventDefault();
         const btn = form.querySelector('button[type="submit"]');
-        btn.disabled = true; btn.innerText = "Authenticating...";
+        btn.disabled = true; btn.innerText = "Signing in...";
 
-        const res = await fetch(`${CONFIG.API_BASE}${CONFIG.ENDPOINTS.login}`, { method: 'POST', body: new FormData(e.target) });
-        if (res.ok) {
-            const d = await res.json();
-            localStorage.setItem('access_token', d.access_token);
-            localStorage.setItem('refresh_token', d.refresh_token);
-            window.location.href = 'shop.html';
-        } else {
-            notify("Invalid Credentials", "error");
+        try {
+            const res = await fetch(`${CONFIG.API_BASE}${CONFIG.ENDPOINTS.login}`, { method: 'POST', body: new FormData(e.target) });
+            if (res.ok) {
+                const d = await res.json();
+                if (!d.access_token || !d.refresh_token) {
+                    notify("Login response is missing tokens", "error");
+                    return;
+                }
+                localStorage.setItem('access_token', d.access_token);
+                localStorage.setItem('refresh_token', d.refresh_token);
+                window.location.href = 'shop.html';
+            } else {
+                notify("Invalid Credentials", "error");
+            }
+        } catch (error) {
+            notify("Cannot reach server. Try again.", "error");
+        } finally {
             btn.disabled = false; btn.innerText = "Sign In";
         }
     };
@@ -338,8 +403,9 @@ async function syncOfflineSales() {
     }
 }
 
-// Display receipt modal for a confirmed sale
-async function showReceipt(sale) {
+// Display receipt modal for a confirmed sale or a pre-submit review.
+function showReceipt(sale, options = {}) {
+    const isReview = options.mode === 'review';
     let modal = document.getElementById('receipt-modal');
     if (!modal) {
         modal = document.createElement('div');
@@ -351,11 +417,20 @@ async function showReceipt(sale) {
     modal.className = 'fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[200] flex items-center justify-center p-4';
     modal.style.display = 'flex';
 
+    const items = sale.items || [];
+    const discount = Number(sale.discount_value || sale.discount || 0);
+    const subtotal = items.reduce((sum, i) => {
+        const qty = Number(i.quantity) || Number(i.qty) || 1;
+        const unit = Number(i.price || i.unit_price_at_sale || i.unit_price || 0);
+        return sum + (unit * qty);
+    }, 0);
+    const total = Number(sale.total_price || sale.total || Math.max(0, subtotal - discount));
+
     // Build items with name fallbacks
-    const itemsHtml = (sale.items || []).map(i => {
+    const itemsHtml = items.map(i => {
         const name = i.name || i.item || i.product_name || 'Item';
         const qty = Number(i.quantity) || Number(i.qty) || 1;
-        const unit = (i.price || i.unit_price_at_sale || i.unit_price || 0);
+        const unit = Number(i.price || i.unit_price_at_sale || i.unit_price || 0);
         return `
         <div class="flex justify-between text-sm mb-2">
             <div class="text-slate-700 font-medium">${name} <span class="text-xs text-slate-400">x${qty}</span></div>
@@ -367,7 +442,7 @@ async function showReceipt(sale) {
         <div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-md border border-slate-100">
             <div class="text-center mb-6">
                 <div class="text-3xl font-black text-slate-900 italic mb-1">O-LITE</div>
-                <div class="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">Official Receipt</div>
+                <div class="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">${isReview ? 'Review Receipt' : 'Official Receipt'}</div>
             </div>
 
             <div class="flex justify-between text-[10px] font-black text-slate-400 uppercase mb-4">
@@ -383,24 +458,37 @@ async function showReceipt(sale) {
             <div class="space-y-2 px-1">
                 <div class="flex justify-between text-sm text-slate-500">
                     <span>Discount</span>
-                    <span class="font-bold text-rose-500">-$${Number(sale.discount_value || sale.discount || 0).toFixed(2)}</span>
+                    <span class="font-bold text-rose-500">-$${discount.toFixed(2)}</span>
                 </div>
                 <div class="flex justify-between text-2xl font-black text-slate-900 pt-2 border-t border-dashed">
                     <span>Total</span>
-                    <span>$${Number(sale.total_price || sale.total || 0).toFixed(2)}</span>
+                    <span>$${total.toFixed(2)}</span>
                 </div>
             </div>
 
             <div class="mt-8 flex gap-3">
-                <button id="receipt-print" class="flex-1 bg-slate-100 text-slate-600 font-bold py-4 rounded-2xl hover:bg-slate-200 transition">Print</button>
-                <button id="receipt-close" class="flex-1 bg-indigo-600 text-white font-black py-4 rounded-2xl shadow-lg shadow-indigo-200 hover:bg-indigo-700 transition">Done</button>
+                <button id="receipt-cancel" class="flex-1 bg-slate-100 text-slate-600 font-bold py-4 rounded-2xl hover:bg-slate-200 transition">${isReview ? 'Cancel' : 'Print'}</button>
+                <button id="receipt-confirm" class="flex-1 bg-indigo-600 text-white font-black py-4 rounded-2xl shadow-lg shadow-indigo-200 hover:bg-indigo-700 transition">${isReview ? 'Confirm Sale' : 'Done'}</button>
             </div>
         </div>
     `;
 
-    // Wire buttons
-    modal.querySelector('#receipt-close').onclick = () => { modal.style.display = 'none'; };
-    modal.querySelector('#receipt-print').onclick = () => { window.print(); };
+    if (!isReview) {
+        modal.querySelector('#receipt-confirm').onclick = () => { modal.style.display = 'none'; };
+        modal.querySelector('#receipt-cancel').onclick = () => { window.print(); };
+        return;
+    }
+
+    return new Promise(resolve => {
+        modal.querySelector('#receipt-cancel').onclick = () => {
+            modal.style.display = 'none';
+            resolve(false);
+        };
+        modal.querySelector('#receipt-confirm').onclick = () => {
+            modal.style.display = 'none';
+            resolve(true);
+        };
+    });
 }
 
 // Confirm payment for a sale (Admin action) — show custom modal first
@@ -503,7 +591,7 @@ window.closeConfirmModal = () => {
     document.getElementById('confirm-modal').style.display = 'none';
 };
 
-window.executeSale = () => {
+window.executeSale = async () => {
     closeConfirmModal();
     
     const buyerInput = document.getElementById('buyer-name');
@@ -536,6 +624,9 @@ window.executeSale = () => {
         buyer_name: b_name,
         payment_method: payment_method
     };
+
+    const confirmed = await showReceipt(saleData, { mode: 'review' });
+    if (!confirmed) return;
     
     let queue = JSON.parse(localStorage.getItem('offline_sales') || '[]');
     queue.push(saleData);
@@ -557,10 +648,11 @@ function renderShopGrid() {
     const el = document.getElementById('product-grid');
     if (!el) return;
     el.innerHTML = state.products.map(p => `
-        <div onclick="addToCart(${p.id})" class="bg-white p-6 rounded-[2rem] border-2 border-transparent hover:border-indigo-600 cursor-pointer shadow-sm transition-all active:scale-95">
-            <div class="font-black text-slate-800 text-lg">${p.name}</div>
-            <div class="text-indigo-600 font-black text-xl mt-1">$${p.price}</div>
-        </div>
+        <button onclick="addToCart(${p.id})" class="text-left bg-white p-4 sm:p-5 lg:p-6 rounded-2xl border border-slate-200 hover:border-indigo-500 hover:shadow-md cursor-pointer shadow-sm transition-all active:scale-[0.98] min-h-28">
+            <div class="font-black text-slate-800 text-base lg:text-lg leading-tight break-words">${p.name}</div>
+            <div class="text-indigo-600 font-black text-lg lg:text-xl mt-2">$${p.price}</div>
+            <div class="text-[10px] mt-3 text-slate-400 font-black uppercase tracking-widest">Tap to add</div>
+        </button>
     `).join('');
 }
 
@@ -601,14 +693,14 @@ function renderCart() {
     const list = document.getElementById('cart-list');
     if (!list) return;
     list.innerHTML = state.cart.map((item, idx) => `
-        <div class="bg-slate-50 border p-4 rounded-2xl flex flex-col gap-2">
-            <div class="flex justify-between font-bold text-sm text-slate-800">
-                <span>${item.name}</span>
-                <button onclick="removeFromCart(${idx})" class="text-rose-500 font-black">×</button>
+        <div class="bg-slate-50 border border-slate-200 p-3 sm:p-4 rounded-2xl flex flex-col gap-3">
+            <div class="flex justify-between gap-3 font-bold text-sm text-slate-800">
+                <span class="break-words leading-snug">${item.name}</span>
+                <button onclick="removeFromCart(${idx})" class="text-rose-500 font-black text-xl leading-none px-2" aria-label="Remove item">&times;</button>
             </div>
-            <div class="flex gap-2">
-                <input type="number" step="0.01" value="${item.price}" onchange="updateCartPrice(${idx}, this.value)" class="w-20 p-2 border rounded-lg text-xs font-bold text-indigo-600 outline-none">
-                <input type="number" value="${item.quantity}" onchange="updateCartQty(${idx}, this.value)" class="w-16 p-2 border rounded-lg text-xs outline-none">
+            <div class="grid grid-cols-2 gap-2">
+                <label class="text-[10px] font-black text-slate-400 uppercase">Price<input type="number" step="0.01" value="${item.price}" onchange="updateCartPrice(${idx}, this.value)" class="mt-1 w-full p-2 border rounded-lg text-xs font-bold text-indigo-600 outline-none focus:border-indigo-500"></label>
+                <label class="text-[10px] font-black text-slate-400 uppercase">Qty<input type="number" value="${item.quantity}" onchange="updateCartQty(${idx}, this.value)" class="mt-1 w-full p-2 border rounded-lg text-xs outline-none focus:border-indigo-500"></label>
             </div>
         </div>
     `).join('');
@@ -649,6 +741,7 @@ window.closeProductModal = () => document.getElementById('product-modal').style.
 async function handleProductSave(e) {
     e.preventDefault();
     const form = e.target;
+    const modal = document.getElementById('product-modal');
     const btn = form.querySelector('button[type="submit"]');
     if (btn && btn.disabled) return;
 
@@ -656,6 +749,8 @@ async function handleProductSave(e) {
         btn.disabled = true;
         btn.innerText = 'Saving...';
     }
+
+    if (modal) modal.style.display = 'none';
 
     const payload = Object.fromEntries(new FormData(form).entries());
     payload.price = parseFloat(payload.price); payload.stock_quantity = parseInt(payload.stock_quantity);
@@ -666,13 +761,13 @@ async function handleProductSave(e) {
     try {
         const res = await apiCall(url, { method: isEdit ? 'PATCH' : 'POST', body: JSON.stringify(payload) });
         if (res && res.ok) {
-            closeProductModal();
             form.reset();
             notify(isEdit ? "Product Updated" : "Product Saved");
             initProducts();
             return;
         }
 
+        if (modal) modal.style.display = 'flex';
         notify('Failed to save product', 'error');
     } finally {
         if (btn) {
@@ -686,9 +781,9 @@ function renderProductGrid() {
     const el = document.getElementById('inv-grid');
     if (!el) return;
     el.innerHTML = state.products.map(p => `
-        <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 flex flex-col justify-between">
+        <div class="bg-white p-5 lg:p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-between hover:shadow-md transition">
             <div>
-                <div class="font-black text-slate-800 text-lg">${p.name}</div>
+                <div class="font-black text-slate-800 text-lg break-words leading-tight">${p.name}</div>
                 <div class="text-indigo-600 font-black text-xl mt-1">$${p.price}</div>
                 <div class="text-[10px] mt-2 text-slate-400 font-bold uppercase">Stock: ${p.stock_quantity}</div>
             </div>
@@ -720,17 +815,17 @@ function renderHistoryList(data) {
         `).join('');
 
         return `
-        <div class="bg-white p-5 md:p-6 rounded-3xl border mb-4 flex flex-col shadow-sm gap-4 hover:shadow-md transition">
+        <div class="bg-white p-4 md:p-6 rounded-2xl border border-slate-200 mb-4 flex flex-col shadow-sm gap-4 hover:shadow-md transition">
             
-            <div class="flex justify-between items-start border-b pb-4">
-                <div>
-                    <div class="flex items-center gap-2 mb-2">
+            <div class="flex flex-col sm:flex-row justify-between items-start gap-4 border-b pb-4">
+                <div class="min-w-0">
+                    <div class="flex flex-wrap items-center gap-2 mb-2">
                         <span class="text-[10px] font-black text-indigo-600 bg-indigo-50 px-2 py-1 rounded-lg uppercase tracking-wider">Order #${s.id}</span>
-                        <span class="text-[10px] bg-slate-100 text-slate-600 px-2 py-1 rounded-lg font-bold uppercase">👤 ${buyerName}</span>
+                        <span class="text-[10px] bg-slate-100 text-slate-600 px-2 py-1 rounded-lg font-bold uppercase break-all">${buyerName}</span>
                     </div>
                     <div class="text-xs text-slate-400 font-bold uppercase">Cashier: <span class="text-slate-600">${s.seller}</span></div>
                 </div>
-                <div class="text-right">
+                <div class="w-full sm:w-auto sm:text-right">
                     <div class="text-2xl font-black text-slate-800">${formatMoney(s.total)}</div>
                     ${s.discount > 0 ? `<div class="text-[10px] text-rose-500 font-bold mt-1 bg-rose-50 px-2 py-1 rounded-md inline-block">-$${s.discount.toFixed(2)} Discount</div>` : ''}
                     ${s.payment_status && s.payment_status !== 'paid' ? `<div class="mt-3"><button onclick="confirmPayment(${s.id}, this)" class="bg-amber-500 text-white py-2 px-3 rounded-lg font-bold">Mark Paid</button></div>` : `<div class="mt-3 inline-block bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full font-bold">${s.payment_status && s.payment_status.toUpperCase()}</div>`}
