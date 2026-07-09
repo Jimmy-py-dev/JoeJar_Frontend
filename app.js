@@ -496,6 +496,10 @@ window.confirmPayment = (saleId, btn) => {
     showConfirmPaymentModal(saleId, btn);
 };
 
+window.confirmDeleteSale = (saleId, btn) => {
+    showDeleteSaleModal(saleId, btn);
+};
+
 async function showConfirmPaymentModal(saleId, triggerBtn) {
     const existing = document.getElementById('confirm-payment-modal');
     if (existing) existing.remove();
@@ -539,6 +543,49 @@ async function showConfirmPaymentModal(saleId, triggerBtn) {
             btn.disabled = false; btn.innerText = 'Mark Paid';
             notify('Failed to confirm payment', 'error');
         }
+    };
+}
+
+async function showDeleteSaleModal(saleId, triggerBtn) {
+    const existing = document.getElementById('delete-sale-modal');
+    if (existing) existing.remove();
+
+    const modal = document.createElement('div');
+    modal.id = 'delete-sale-modal';
+    modal.className = 'fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4';
+
+    modal.innerHTML = `
+        <div class="bg-white p-8 lg:p-10 rounded-3xl lg:rounded-[3rem] shadow-2xl w-full max-w-sm text-center">
+            <div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-rose-100 text-rose-600 font-black text-2xl">!</div>
+            <h3 class="text-2xl font-black mb-2 text-slate-800">Delete Sale</h3>
+            <p class="text-slate-500 font-medium mb-6 text-sm lg:text-base">Delete sale #${saleId}? This cannot be undone from the app.</p>
+            <div class="flex gap-4">
+                <button id="delete-sale-cancel" class="flex-1 font-bold text-slate-400 hover:text-slate-600 py-3">Cancel</button>
+                <button id="delete-sale-confirm" class="flex-1 bg-rose-600 text-white py-3 lg:py-4 rounded-2xl font-black shadow-xl shadow-rose-100">Delete</button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    modal.querySelector('#delete-sale-cancel').onclick = () => modal.remove();
+    modal.querySelector('#delete-sale-confirm').onclick = async function () {
+        const btn = this;
+        btn.disabled = true; btn.innerText = 'Deleting...';
+        if (triggerBtn) triggerBtn.disabled = true;
+
+        const res = await apiCall(`${CONFIG.ENDPOINTS.sales}${saleId}`, { method: 'DELETE' });
+
+        if (res && res.ok) {
+            notify('Sale deleted', 'success');
+            modal.remove();
+            initHistory();
+            return;
+        }
+
+        btn.disabled = false; btn.innerText = 'Delete';
+        if (triggerBtn) triggerBtn.disabled = false;
+        notify('Failed to delete sale', 'error');
     };
 }
 
@@ -828,7 +875,10 @@ function renderHistoryList(data) {
                 <div class="w-full sm:w-auto sm:text-right">
                     <div class="text-2xl font-black text-slate-800">${formatMoney(s.total)}</div>
                     ${s.discount > 0 ? `<div class="text-[10px] text-rose-500 font-bold mt-1 bg-rose-50 px-2 py-1 rounded-md inline-block">-$${s.discount.toFixed(2)} Discount</div>` : ''}
-                    ${s.payment_status && s.payment_status !== 'paid' ? `<div class="mt-3"><button onclick="confirmPayment(${s.id}, this)" class="bg-amber-500 text-white py-2 px-3 rounded-lg font-bold">Mark Paid</button></div>` : `<div class="mt-3 inline-block bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full font-bold">${s.payment_status && s.payment_status.toUpperCase()}</div>`}
+                    <div class="mt-3 flex flex-wrap sm:justify-end gap-2">
+                        ${s.payment_status && s.payment_status !== 'paid' ? `<button onclick="confirmPayment(${s.id}, this)" class="bg-amber-500 text-white py-2 px-3 rounded-lg font-bold">Mark Paid</button>` : `<span class="inline-block bg-emerald-100 text-emerald-700 px-3 py-2 rounded-lg font-bold">${s.payment_status && s.payment_status.toUpperCase()}</span>`}
+                        <button onclick="confirmDeleteSale(${s.id}, this)" class="bg-rose-50 text-rose-600 hover:bg-rose-100 py-2 px-3 rounded-lg font-bold transition">Delete</button>
+                    </div>
                 </div>
             </div>
             
