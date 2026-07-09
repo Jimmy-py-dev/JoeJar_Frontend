@@ -5,6 +5,7 @@ const CONFIG = {
         refresh: "/auth/refresh",
         products: "/products/",
         sales: "/sales/",
+        deleteSale: "/sales/delete_sale/",
         salesExport: "/sales/export",
         confirmSale: "/sales/confirm",
         buyers: "/sales/buyers",
@@ -574,7 +575,7 @@ async function showDeleteSaleModal(saleId, triggerBtn) {
         btn.disabled = true; btn.innerText = 'Deleting...';
         if (triggerBtn) triggerBtn.disabled = true;
 
-        const res = await apiCall(`${CONFIG.ENDPOINTS.sales}${saleId}`, { method: 'DELETE' });
+        const res = await apiCall(`${CONFIG.ENDPOINTS.deleteSale}${saleId}`, { method: 'DELETE' });
 
         if (res && res.ok) {
             notify('Sale deleted', 'success');
